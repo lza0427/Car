@@ -32,3 +32,4 @@
 .\objects\main.o: .\FWLIB\inc\sys.h
 .\objects\main.o: USER\motor.h
 .\objects\main.o: USER\encoder.h
+.\objects\main.o: USER\delay.h

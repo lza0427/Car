@@ -12,6 +12,54 @@ int delay_50 = 0;
 #define T 0.245f
 #define L 0.29f
 #define K 8.00f
+
+/**************************************************************************
+函数功能：所有的控制代码都在这里面
+         定时中断触发
+         严格保证采样和数据处理的时间同步				 
+**************************************************************************/
+void TIM6_IRQHandler(void)   //TIM6中断
+{
+	if (TIM_GetITStatus(TIM6, TIM_IT_Update) != RESET) 	
+	{     	
+			TIM_ClearITPendingBit(TIM6, TIM_IT_Update);          //清除中断标志位  	
+//			Flag_Target=!Flag_Target; //分频标志位
+
+		
+//看不明白！！！！！！！！！！！！！！！！！！！		
+//			if(delay_flag==1)
+//			{
+//					if(++delay_50==2)	 delay_50=0,delay_flag=0; //给主函数提供50ms的精准延时
+//			}
+			
+		
+		
+//			
+//		  if(Flag_Target==1)	
+//			{
+//			  	Key();//扫描按键变化	
+				
+   									                                        
+//			}else if(Flag_Target == 0){   
+          Encoder_Right=Read_Encoder(3);  //===读取编码器的值
+					Encoder_Left=Read_Encoder(2);    //===读取编码器的值				
+//					Get_RC();   //===接收控制指令
+	
+						 Kinematic_Analysis(Velocity, Angle); 	//小车运动学分析   
+						 Motor_Left=Incremental_PI_Left(Encoder_Left,Target_Left);  //===速度闭环控制计算左电机最终PWM   Motor_Left
+						 Motor_Right=Incremental_PI_Right(Encoder_Right,Target_Right);  //===速度闭环控制计算右电机最终PWM  Motor_Right
+						 Xianfu_Pwm(6900);                          //===PWM限幅
+						 Set_Pwm(Motor_Left,Motor_Right,Servo);     //===赋值给PWM寄存器  
+	
+//			}
+ }
+	// return 0;	 //返回值
+} 
+
+
+
+
+
 /**************************************************************************
 函数功能：小车运动数学模型
 入口参数：速度和转角
@@ -30,44 +78,47 @@ void Kinematic_Analysis(float velocity,float angle)
 		}
 		
 	Tand = tan(angle/57.3);;//(int)tan(angle);
-		Target_Left=-velocity*(1-T*Tand/2/L); 
+		Target_Left=velocity*(1-T*Tand/2/L); 
 		Target_Right=velocity*(1+T*Tand/2/L);      //后轮差速
-		Servo=SERVO_INIT-angle*K; //舵机转向   
+
 }
+
+
+
 /**************************************************************************
-函数功能：所有的控制代码都在这里面
-         定时中断触发
-         严格保证采样和数据处理的时间同步				 
+函数功能：增量PI控制器
+入口参数：编码器测量值，目标速度
+返回  值：电机PWM
+根据增量式离散PID公式 
+pwm+=Kp[e（k）-e(k-1)]+Ki*e(k)+Kd[e(k)-2e(k-1)+e(k-2)]
+e(k)代表本次偏差 
+e(k-1)代表上一次的偏差  以此类推 
+pwm代表增量输出
+在我们的速度控制闭环系统里面，只使用PI控制
+pwm+=Kp[e（k）-e(k-1)]+Ki*e(k)
 **************************************************************************/
-void TIM6_IRQHandler(void)   //TIM6中断
-{
-	if (TIM_GetITStatus(TIM6, TIM_IT_Update) != RESET) 	
-	{     	
-			TIM_ClearITPendingBit(TIM6, TIM_IT_Update);          //清除中断标志位  	
-			Flag_Target=!Flag_Target; //分频标志位
-			if(delay_flag==1)
-			{
-					if(++delay_50==2)	 delay_50=0,delay_flag=0; //给主函数提供50ms的精准延时
-			}
-		  if(Flag_Target==1)	
-			{
-//			  	Key();//扫描按键变化	
-   									                                        
-			}else if(Flag_Target == 0){   
-          Encoder_Right=Read_Encoder(3);  //===读取编码器的值
-					Encoder_Left=Read_Encoder(2);    //===读取编码器的值				
-//					Get_RC();   //===接收控制指令
-	
-						 Kinematic_Analysis(Velocity,-Angle); 	//小车运动学分析   
-						 Motor_Left=Incremental_PI_Left(Encoder_Left,Target_Left);  //===速度闭环控制计算左电机最终PWM   Motor_Left
-						 Motor_Right=Incremental_PI_Right(Encoder_Right,Target_Right);  //===速度闭环控制计算右电机最终PWM  Motor_Right
-						 Xianfu_Pwm(6900);                          //===PWM限幅
-						 Set_Pwm(Motor_Left,Motor_Right,Servo);     //===赋值给PWM寄存器  
-	
-			}
- }
-	// return 0;	 //返回值
-} 
+int Incremental_PI_Left (int Encoder,int Target)
+{ 	
+	 static int Bias,Pwm,Last_bias;
+	 Bias=Encoder-Target;                //计算偏差
+	 Pwm+=Velocity_KP*(Bias-Last_bias)+Velocity_KI*Bias;   //增量式PI控制器
+	 if(Pwm>7200)Pwm=7200;
+	 if(Pwm<-7200)Pwm=-7200;
+	 Last_bias=Bias;	                   //保存上一次偏差 
+	 return Pwm;                         //增量输出
+}
+int Incremental_PI_Right (int Encoder,int Target)
+{ 	
+	 static int Bias,Pwm,Last_bias;
+	 Bias=Encoder-Target;                //计算偏差
+	 Pwm+=Velocity_KP*(Bias-Last_bias)+Velocity_KI*Bias;   //增量式PI控制器
+	 if(Pwm>7200)Pwm=7200;
+	 if(Pwm<-7200)Pwm=-7200;
+	 Last_bias=Bias;	                   //保存上一次偏差 
+	 return Pwm;                         //增量输出
+}
+
+
 /**************************************************************************
 函数功能：赋值给PWM寄存器
 入口参数：PWM
@@ -141,38 +192,7 @@ int myabs(int a)
 	  else temp=a;
 	  return temp;
 }
-/**************************************************************************
-函数功能：增量PI控制器
-入口参数：编码器测量值，目标速度
-返回  值：电机PWM
-根据增量式离散PID公式 
-pwm+=Kp[e（k）-e(k-1)]+Ki*e(k)+Kd[e(k)-2e(k-1)+e(k-2)]
-e(k)代表本次偏差 
-e(k-1)代表上一次的偏差  以此类推 
-pwm代表增量输出
-在我们的速度控制闭环系统里面，只使用PI控制
-pwm+=Kp[e（k）-e(k-1)]+Ki*e(k)
-**************************************************************************/
-int Incremental_PI_Left (int Encoder,int Target)
-{ 	
-	 static int Bias,Pwm,Last_bias;
-	 Bias=Encoder-Target;                //计算偏差
-	 Pwm+=Velocity_KP*(Bias-Last_bias)+Velocity_KI*Bias;   //增量式PI控制器
-	 if(Pwm>7200)Pwm=7200;
-	 if(Pwm<-7200)Pwm=-7200;
-	 Last_bias=Bias;	                   //保存上一次偏差 
-	 return Pwm;                         //增量输出
-}
-int Incremental_PI_Right (int Encoder,int Target)
-{ 	
-	 static int Bias,Pwm,Last_bias;
-	 Bias=Encoder-Target;                //计算偏差
-	 Pwm+=Velocity_KP*(Bias-Last_bias)+Velocity_KI*Bias;   //增量式PI控制器
-	 if(Pwm>7200)Pwm=7200;
-	 if(Pwm<-7200)Pwm=-7200;
-	 Last_bias=Bias;	                   //保存上一次偏差 
-	 return Pwm;                         //增量输出
-}
+
 /**************************************************************************
 函数功能：通过指令对小车进行遥控
 入口参数：串口指令
