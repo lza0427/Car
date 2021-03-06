@@ -30,7 +30,7 @@ void TIM6Configure(void){
 	
 	TIM_ITConfig(TIM6, TIM_IT_Update, ENABLE );
 	TIM_Cmd(TIM6, ENABLE);
-	
+	//°¡¹þ¹þ¹þ£»
 	
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	
