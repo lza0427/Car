@@ -14,6 +14,37 @@ int delay_50 = 0;
 #define K 8.00f
 
 /**************************************************************************
+函数功能：初始化TIM6与中断			 
+**************************************************************************/
+void TIM6Configure(void){
+	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure; 
+	NVIC_InitTypeDef NVIC_InitStructure;
+	
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM6 , ENABLE);
+	
+	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Down;
+	TIM_TimeBaseInitStructure.TIM_Period = 3600;
+	TIM_TimeBaseInitStructure.TIM_Prescaler = 999;
+	TIM_TimeBaseInit(TIM6, & TIM_TimeBaseInitStructure);
+	
+	
+	TIM_ITConfig(TIM6, TIM_IT_Update, ENABLE );
+	TIM_Cmd(TIM6, ENABLE);
+	
+	
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	
+	NVIC_InitStructure.NVIC_IRQChannel = TIM6_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_Init(&NVIC_InitStructure); 
+}
+
+
+
+
+/**************************************************************************
 函数功能：所有的控制代码都在这里面
          定时中断触发
          严格保证采样和数据处理的时间同步				 
