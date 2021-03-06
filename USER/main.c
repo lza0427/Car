@@ -7,6 +7,12 @@
 extern int Velocity, Angle;
 
 int main(void){
+	
+	Encoder_Init_TIM2();
+	Encoder_Init_TIM3();
+	MiniBalance_PWM_Init(7200, 99);
+	Servo_PWM_Init(7200,99);
+	
 	while(1){
 		Angle = 200;
 		Velocity = 1000;

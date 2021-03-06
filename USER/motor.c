@@ -5,6 +5,8 @@ void MiniBalance_PWM_Init(u16 arr,u16 psc)
 	GPIO_InitTypeDef GPIO_InitStructure;
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
 	TIM_OCInitTypeDef  TIM_OCInitStructure;
+	
+	
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM8, ENABLE);// 
  	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC | RCC_APB2Periph_AFIO, ENABLE);  //使能GPIO外设时钟使能
  

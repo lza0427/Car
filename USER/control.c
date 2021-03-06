@@ -24,7 +24,7 @@ void TIM6Configure(void){
 	
 	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Down;
 	TIM_TimeBaseInitStructure.TIM_Period = 3600;
-	TIM_TimeBaseInitStructure.TIM_Prescaler = 999;
+	TIM_TimeBaseInitStructure.TIM_Prescaler = 99;
 	TIM_TimeBaseInit(TIM6, & TIM_TimeBaseInitStructure);
 	
 	
